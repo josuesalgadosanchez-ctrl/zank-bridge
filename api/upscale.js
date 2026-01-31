@@ -5,6 +5,7 @@ const fal = createClient({
 });
 
 module.exports = async (req, res) => {
+  // Permisos de seguridad para Shopify
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
@@ -13,12 +14,15 @@ module.exports = async (req, res) => {
 
   try {
     const { imageBase64, scaleFactor } = req.body;
+
+    // Ejecución de la IA
     const result = await fal.run("fal-ai/falsr/upscale", {
       input: {
         image_url: imageBase64,
         scale: parseInt(scaleFactor) || 2
       },
     });
+
     res.status(200).json(result);
   } catch (error) {
     res.status(500).json({ error: error.message });
