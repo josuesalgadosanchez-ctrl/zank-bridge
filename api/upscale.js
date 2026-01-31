@@ -5,7 +5,7 @@ const fal = createClient({
 });
 
 module.exports = async (req, res) => {
-  // Configuración de Permisos (CORS) para Zank Studios
+  // Permisos de seguridad para que Shopify pueda entrar
   res.setHeader('Access-Control-Allow-Credentials', true);
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'GET,OPTIONS,PATCH,DELETE,POST,PUT');
@@ -19,6 +19,7 @@ module.exports = async (req, res) => {
   try {
     const { imageBase64, scaleFactor } = req.body;
 
+    // Ejecución de la IA usando tu saldo de fal.ai
     const result = await fal.run("fal-ai/falsr/upscale", {
       input: {
         image_url: imageBase64,
@@ -26,9 +27,9 @@ module.exports = async (req, res) => {
       },
     });
 
+    // Enviamos el resultado directo
     res.status(200).json(result);
   } catch (error) {
-    console.error(error);
     res.status(500).json({ error: error.message });
   }
 };
