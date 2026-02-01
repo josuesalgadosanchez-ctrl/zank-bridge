@@ -10,7 +10,7 @@ export default async function handler(req, res) {
     const { image_data, scale } = req.body;
 
     // Usaremos 'fal-ai/creative-upscaler' que es excelente para detalles
-    const response = await fetch("https://queue.fal.run/fal-ai/creative-upscaler", {
+    const response = await fetch("https://queue.fal.run/fal-ai/esrgan-4x", {
       method: "POST",
       headers: {
         "Authorization": `Key ${process.env.FAL_KEY}`,
