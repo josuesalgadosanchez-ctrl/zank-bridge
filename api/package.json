@@ -1,8 +1,0 @@
-{
-  "name": "zank-bridge",
-  "version": "1.0.0",
-  "main": "api/upscale.js",
-  "dependencies": {
-    "@fal-ai/client": "^1.2.0"
-  }
-}
