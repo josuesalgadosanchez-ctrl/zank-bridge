@@ -6,9 +6,9 @@ export default async function handler(req, res) {
   if (req.method === 'OPTIONS') return res.status(200).end();
 
   try {
-    const { image_data } = req.body;
+    const { image_data, scale } = req.body; // Recibimos el scale del frontend
 
-    // ESTA ES LA URL CORRECTA (Fíjate que dice 'esrgan' a secas, sin 'real-')
+    // Usamos el modelo rápido 'esrgan'
     const response = await fetch("https://queue.fal.run/fal-ai/esrgan", {
       method: "POST",
       headers: {
@@ -17,7 +17,7 @@ export default async function handler(req, res) {
       },
       body: JSON.stringify({
         image_url: image_data,
-        scale: 2
+        scale: parseInt(scale) || 2 // Si no se especifica, usa 2
       }),
     });
 
