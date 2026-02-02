@@ -1,13 +1,10 @@
 // api/remove-bg.js
-// Versión Nativa (Sin dependencia 'fal-serverless' para evitar errores de importación)
-
 export default async function handler(req, res) {
   // 1. Configuración de CORS
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
 
-  // Responder a la "pregunta" del navegador
   if (req.method === 'OPTIONS') {
     res.status(200).end();
     return;
@@ -21,16 +18,12 @@ export default async function handler(req, res) {
   try {
     const { image_data } = req.body;
 
-    if (!image_data) {
-      return res.status(400).json({ error: 'Falta image_data' });
-    }
+    if (!image_data) return res.status(400).json({ error: 'Falta image_data' });
+    if (!process.env.FAL_KEY) return res.status(500).json({ error: 'Falta FAL_KEY en Vercel' });
 
-    if (!process.env.FAL_KEY) {
-      throw new Error("Falta la FAL_KEY en Vercel");
-    }
-
-    // 2. Llamada DIRECTA a la API de Fal (Sin librerías)
-    const response = await fetch("https://queue.fal.run/fal-ai/image/rembg", {
+    // 2. CORRECCIÓN: Usamos el modelo "bria/background/remove"
+    // Esta es la dirección correcta que sí existe.
+    const response = await fetch("https://fal.run/fal-ai/bria/background/remove", {
       method: "POST",
       headers: {
         "Authorization": `Key ${process.env.FAL_KEY}`,
@@ -43,16 +36,14 @@ export default async function handler(req, res) {
 
     if (!response.ok) {
         const errorText = await response.text();
-        throw new Error(`Error de Fal AI (${response.status}): ${errorText}`);
+        return res.status(response.status).json({ error: `Fal AI Error: ${errorText}` });
     }
 
     const data = await response.json();
-
-    // 3. Responder al Frontend
     res.status(200).json(data);
 
   } catch (error) {
     console.error("Error Backend:", error);
-    res.status(500).json({ error: error.message, details: error.toString() });
+    res.status(500).json({ error: error.message });
   }
 }
