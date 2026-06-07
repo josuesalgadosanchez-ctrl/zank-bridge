@@ -62,7 +62,8 @@ export default async function handler(req, res) {
         prompt: `Generate a high quality image of the following graphic design on a solid ${bgColor} background. The design must be centered, without any t-shirt or clothing, just the design itself on a pure ${bgColor} background. Design description: ${designDescription}`,
         n: 1,
         size: '1024x1024',
-        quality: 'medium'
+        quality: 'medium',
+        output_format: 'url'
       })
     });
 
@@ -72,13 +73,17 @@ export default async function handler(req, res) {
     }
 
     const dalleData = await dalleResponse.json();
+    
     const imageUrl = dalleData.data?.[0]?.url;
+    const imageB64 = dalleData.data?.[0]?.b64_json;
 
-    if (!imageUrl) {
-      return res.status(500).json({ error: 'DALL-E no devolvió imagen' });
+    if (imageUrl) {
+      return res.status(200).json({ image_url: imageUrl });
+    } else if (imageB64) {
+      return res.status(200).json({ image_url: `data:image/png;base64,${imageB64}` });
+    } else {
+      return res.status(500).json({ error: 'Sin imagen. Respuesta: ' + JSON.stringify(dalleData) });
     }
-
-    return res.status(200).json({ image_url: imageUrl });
 
   } catch (error) {
     console.error("Error extract-design:", error);
