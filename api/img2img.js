@@ -18,8 +18,9 @@ export default async function handler(req, res) {
 
     const selectedPrompt = prompts[shirt_color] || prompts.negro;
 
-    // Enviamos a la cola de Fal (igual que tu upscaler)
-    const response = await fetch("https://queue.fal.run/fal-ai/flux-pro/v1/redux", {
+    // CORRECCIÓN 1: Usamos fal-ai/flux/dev/image-to-image que es más estable
+    // CORRECCIÓN 2: Llamada directa (fal.run) en lugar de cola (queue.fal.run)
+    const response = await fetch("https://fal.run/fal-ai/flux/dev/image-to-image", {
       method: "POST",
       headers: {
         "Authorization": `Key ${process.env.FAL_KEY}`,
@@ -28,9 +29,9 @@ export default async function handler(req, res) {
       body: JSON.stringify({
         image_url: image_data,
         prompt: selectedPrompt,
+        strength: 0.85,
         num_images: 1,
-        image_size: "square_hd",
-        guidance_scale: 7.5
+        image_size: "square_hd"
       }),
     });
 
@@ -40,8 +41,9 @@ export default async function handler(req, res) {
     }
 
     const data = await response.json();
-    // Devolvemos el request_id igual que submit.js
-    return res.status(200).json({ request_id: data.request_id });
+    
+    // CORRECCIÓN 3: Devolvemos la imagen directo, sin cola
+    return res.status(200).json(data);
 
   } catch (error) {
     console.error("Error img2img:", error);
