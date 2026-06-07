@@ -12,7 +12,6 @@ export default async function handler(req, res) {
     const bgColor = shirt_color === 'blanco' ? 'white' : 'black';
     const shirtColor = shirt_color === 'blanco' ? 'white' : 'black';
 
-    // PASO 1: GPT-4o analiza el diseño
     const visionResponse = await fetch('https://api.openai.com/v1/chat/completions', {
       method: 'POST',
       headers: {
@@ -52,7 +51,6 @@ export default async function handler(req, res) {
       return res.status(500).json({ error: 'GPT-4o no pudo analizar el diseño' });
     }
 
-    // PASO 2: DALL-E 3 genera el diseño
     const dalleResponse = await fetch('https://api.openai.com/v1/images/generations', {
       method: 'POST',
       headers: {
@@ -60,12 +58,11 @@ export default async function handler(req, res) {
         'Content-Type': 'application/json'
       },
       body: JSON.stringify({
-  model: 'dall-e-3',
-  prompt: `Generate a high quality image of the following graphic design on a solid ${bgColor} background. The design must be centered, without any t-shirt or clothing, just the design itself on a pure ${bgColor} background. Design description: ${designDescription}`,
-  n: 1,
-  size: '1024x1024',
-  quality: 'standard'
-})
+        model: 'dall-e-3',
+        prompt: `Generate a high quality image of the following graphic design on a solid ${bgColor} background. The design must be centered, without any t-shirt or clothing, just the design itself on a pure ${bgColor} background. Design description: ${designDescription}`,
+        n: 1,
+        size: '1024x1024',
+        quality: 'standard'
       })
     });
 
