@@ -9,8 +9,7 @@ export default async function handler(req, res) {
     if (!image_data) return res.status(400).json({ error: 'Falta image_data' });
     if (!process.env.OPENAI_KEY) return res.status(500).json({ error: 'Falta OPENAI_KEY' });
 
-    const shirtColor = shirt_color === 'blanco' ? 'blanca' : 'negra';
-    const bgColor = shirt_color === 'blanco' ? 'blanco' : 'negro';
+    const color = shirt_color || 'negra';
 
     const base64Pure = image_data.replace(/^data:image\/\w+;base64,/, '');
     const imageBuffer = Buffer.from(base64Pure, 'base64');
@@ -18,7 +17,7 @@ export default async function handler(req, res) {
 
     const formData = new FormData();
     formData.append('model', 'gpt-image-1');
-    formData.append('prompt', `Extrae el diseño de esta camiseta ${shirtColor} y genéralo de nuevo en alta calidad, respeta el diseño también su estilo, sus colores originales al 100%. y los textos si es necesario hazlos tipo vector para quie se vean perfectos. Genera un fondo completamente ${bgColor}.`);
+    formData.append('prompt', `Extrae el diseño de esta camiseta ${color} y genéralo de nuevo en alta calidad, respeta el diseño también su estilo, sus colores originales al 100%. y los textos si es necesario hazlos tipo vector para que se vean perfectos. Genera un fondo completamente ${color}.`);
     formData.append('n', '1');
     formData.append('size', '1024x1536');
     formData.append('quality', 'medium');
