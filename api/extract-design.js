@@ -60,12 +60,12 @@ export default async function handler(req, res) {
         'Content-Type': 'application/json'
       },
       body: JSON.stringify({
-        model: 'dall-e-3',
-        prompt: `Generate a high quality image of the following graphic design on a solid ${bgColor} background. The design must be centered, without any t-shirt or clothing, just the design itself on a pure ${bgColor} background. Design description: ${designDescription}`,
-        n: 1,
-        size: '1024x1024',
-        quality: 'standard',
-        response_format: 'url'
+  model: 'dall-e-3',
+  prompt: `Generate a high quality image of the following graphic design on a solid ${bgColor} background. The design must be centered, without any t-shirt or clothing, just the design itself on a pure ${bgColor} background. Design description: ${designDescription}`,
+  n: 1,
+  size: '1024x1024',
+  quality: 'standard'
+})
       })
     });
 
