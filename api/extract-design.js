@@ -35,8 +35,7 @@ export default async function handler(req, res) {
             ]
           }],
           generationConfig: {
-            responseModalities: ["IMAGE", "TEXT"],
-            responseMimeType: "image/png"
+            responseModalities: ["IMAGE", "TEXT"]
           }
         })
       }
