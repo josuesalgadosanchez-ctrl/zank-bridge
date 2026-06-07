@@ -14,31 +14,14 @@ export default async function handler(req, res) {
 
     const base64Pure = image_data.replace(/^data:image\/\w+;base64,/, '');
     const imageBuffer = Buffer.from(base64Pure, 'base64');
+    const blob = new Blob([imageBuffer], { type: 'image/png' });
 
-    const { createCanvas, loadImage } = await import('canvas');
-    const img = await loadImage(imageBuffer);
-    
-    const MAX = 1024;
-    let w = img.width;
-    let h = img.height;
-    if (w > MAX || h > MAX) {
-      const scale = Math.min(MAX / w, MAX / h);
-      w = Math.round(w * scale);
-      h = Math.round(h * scale);
-    }
-
-    const canvas = createCanvas(w, h);
-    const ctx = canvas.getContext('2d');
-    ctx.drawImage(img, 0, 0, w, h);
-    const pngBuffer = canvas.toBuffer('image/png');
-
-    const blob = new Blob([pngBuffer], { type: 'image/png' });
     const formData = new FormData();
     formData.append('model', 'gpt-image-1');
     formData.append('prompt', `Extrae el diseño de esta camiseta ${shirtColor} y genéralo de nuevo en alta calidad, respeta el diseño y estilo original al 100%. Genera un fondo completamente ${bgColor}.`);
     formData.append('n', '1');
     formData.append('size', '1024x1536');
-    formData.append('quality', 'medium');
+    formData.append('quality', 'high');
     formData.append('image', blob, 'image.png');
 
     const response = await fetch('https://api.openai.com/v1/images/edits', {
