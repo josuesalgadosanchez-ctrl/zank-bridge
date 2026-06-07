@@ -15,8 +15,10 @@ export default async function handler(req, res) {
     const base64Pure = image_data.replace(/^data:image\/\w+;base64,/, '');
     const mimeType = image_data.match(/^data:(image\/\w+);base64,/)?.[1] || 'image/jpeg';
 
-    const visionResponse = await fetch(
-      `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${process.env.GEMINI_KEY}`,
+    const prompt = `Look at this ${shirtColor} t-shirt image. Extract ONLY the graphic design/artwork printed on it and recreate it as a standalone high quality image on a solid ${bgColor} background. Do not include the t-shirt, no fabric, no clothing. Only the design centered on a pure ${bgColor} background.`;
+
+    const response = await fetch(
+      `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash-preview-image-generation:generateContent?key=${process.env.GEMINI_KEY}`,
       {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -29,59 +31,42 @@ export default async function handler(req, res) {
                   data: base64Pure
                 }
               },
-              {
-                text: `Describe in extreme detail the graphic design printed on this ${shirtColor} t-shirt. Focus only on the design/artwork itself: shapes, figures, text, symbols, colors, style, composition. Be very specific and detailed. Do not describe the t-shirt or its color, only the design printed on it.`
-              }
+              { text: prompt }
             ]
-          }]
-        })
-      }
-    );
-
-    if (!visionResponse.ok) {
-      const err = await visionResponse.text();
-      return res.status(500).json({ error: 'Gemini Vision error: ' + err });
-    }
-
-    const visionData = await visionResponse.json();
-    const designDescription = visionData.candidates?.[0]?.content?.parts?.[0]?.text;
-
-    if (!designDescription) {
-      return res.status(500).json({ error: 'Gemini no pudo analizar el diseño' });
-    }
-
-    const imagePrompt = `Generate a high quality image of the following graphic design on a solid ${bgColor} background. The design must be centered, without any t-shirt or clothing, just the design itself floating on the ${bgColor} background. Design description: ${designDescription}`;
-
-    const imagenResponse = await fetch(
-      `https://generativelanguage.googleapis.com/v1beta/models/imagen-3.0-generate-001:predict?key=${process.env.GEMINI_KEY}`,
-      {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          instances: [{ prompt: imagePrompt }],
-          parameters: {
-            sampleCount: 1,
-            aspectRatio: "1:1",
-            personGeneration: "allow_adult"
+          }],
+          generationConfig: {
+            responseModalities: ["IMAGE", "TEXT"],
+            responseMimeType: "image/png"
           }
         })
       }
     );
 
-    if (!imagenResponse.ok) {
-      const err = await imagenResponse.text();
-      return res.status(500).json({ error: 'Gemini Imagen error: ' + err });
+    if (!response.ok) {
+      const err = await response.text();
+      return res.status(500).json({ error: 'Gemini error: ' + err });
     }
 
-    const imagenData = await imagenResponse.json();
-    const imageBase64Result = imagenData.predictions?.[0]?.bytesBase64Encoded;
+    const data = await response.json();
+    
+    const parts = data.candidates?.[0]?.content?.parts;
+    let imageBase64 = null;
 
-    if (!imageBase64Result) {
-      return res.status(500).json({ error: 'Gemini Imagen no devolvió imagen. Respuesta: ' + JSON.stringify(imagenData) });
+    if (parts) {
+      for (const part of parts) {
+        if (part.inlineData?.data) {
+          imageBase64 = part.inlineData.data;
+          break;
+        }
+      }
+    }
+
+    if (!imageBase64) {
+      return res.status(500).json({ error: 'Gemini no generó imagen. Respuesta: ' + JSON.stringify(data) });
     }
 
     return res.status(200).json({
-      image_url: `data:image/png;base64,${imageBase64Result}`
+      image_url: `data:image/png;base64,${imageBase64}`
     });
 
   } catch (error) {
