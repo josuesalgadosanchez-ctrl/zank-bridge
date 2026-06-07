@@ -16,7 +16,7 @@ export default async function handler(req, res) {
     const mimeType = image_data.match(/^data:(image\/\w+);base64,/)?.[1] || 'image/jpeg';
 
     const visionResponse = await fetch(
-      `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${process.env.GEMINI_KEY}`,
+      `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${process.env.GEMINI_KEY}`,
       {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -77,7 +77,7 @@ export default async function handler(req, res) {
     const imageBase64Result = imagenData.predictions?.[0]?.bytesBase64Encoded;
 
     if (!imageBase64Result) {
-      return res.status(500).json({ error: 'Gemini Imagen no devolvió imagen' });
+      return res.status(500).json({ error: 'Gemini Imagen no devolvió imagen. Respuesta: ' + JSON.stringify(imagenData) });
     }
 
     return res.status(200).json({
