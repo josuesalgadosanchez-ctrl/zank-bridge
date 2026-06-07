@@ -18,10 +18,13 @@ export default async function handler(req, res) {
 
     const formData = new FormData();
     formData.append('model', 'gpt-image-1');
-    formData.append('prompt', `Extrae el diseño de esta camiseta ${shirtColor} y genéralo de nuevo en alta calidad, respeta el diseño y estilo original al 100%. Genera un fondo completamente ${bgColor}.`);
+    formData.append('prompt', `Extrae el diseño de esta camiseta ${shirtColor} y genéralo de nuevo en alta calidad, respeta el diseño también su estilo original al 100%. Genera un fondo completamente ${bgColor}.`);
     formData.append('n', '1');
     formData.append('size', '1024x1536');
-    formData.append('quality', 'high');
+    formData.append('quality', 'medium');
+    formData.append('background', 'auto');
+    formData.append('moderation', 'auto');
+    formData.append('input_fidelity', 'high');
     formData.append('image', blob, 'image.png');
 
     const response = await fetch('https://api.openai.com/v1/images/edits', {
