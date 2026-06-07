@@ -7,84 +7,81 @@ export default async function handler(req, res) {
   try {
     const { image_data, shirt_color } = req.body;
     if (!image_data) return res.status(400).json({ error: 'Falta image_data' });
-    if (!process.env.GEMINI_KEY) return res.status(500).json({ error: 'Falta GEMINI_KEY' });
+    if (!process.env.OPENAI_KEY) return res.status(500).json({ error: 'Falta OPENAI_KEY' });
 
     const bgColor = shirt_color === 'blanco' ? 'white' : 'black';
     const shirtColor = shirt_color === 'blanco' ? 'white' : 'black';
 
-    const base64Pure = image_data.replace(/^data:image\/\w+;base64,/, '');
-    const mimeType = image_data.match(/^data:(image\/\w+);base64,/)?.[1] || 'image/jpeg';
-
-    // PASO 1: Gemini 2.5 Flash analiza el diseño
-    const visionResponse = await fetch(
-      `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${process.env.GEMINI_KEY}`,
-      {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          contents: [{
-            parts: [
+    // PASO 1: GPT-4o analiza el diseño
+    const visionResponse = await fetch('https://api.openai.com/v1/chat/completions', {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${process.env.OPENAI_KEY}`,
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({
+        model: 'gpt-4o',
+        messages: [
+          {
+            role: 'user',
+            content: [
               {
-                inline_data: {
-                  mime_type: mimeType,
-                  data: base64Pure
-                }
+                type: 'image_url',
+                image_url: { url: image_data }
               },
               {
+                type: 'text',
                 text: `Describe in extreme detail the graphic design printed on this ${shirtColor} t-shirt. Focus only on the design/artwork itself: shapes, figures, text, symbols, colors, style, composition. Be very specific and detailed. Do not describe the t-shirt or its color, only the design printed on it.`
               }
             ]
-          }]
-        })
-      }
-    );
+          }
+        ],
+        max_tokens: 1000
+      })
+    });
 
     if (!visionResponse.ok) {
       const err = await visionResponse.text();
-      return res.status(500).json({ error: 'Gemini Vision error: ' + err });
+      return res.status(500).json({ error: 'GPT-4o error: ' + err });
     }
 
     const visionData = await visionResponse.json();
-    const designDescription = visionData.candidates?.[0]?.content?.parts?.[0]?.text;
+    const designDescription = visionData.choices?.[0]?.message?.content;
 
     if (!designDescription) {
-      return res.status(500).json({ error: 'Gemini no pudo analizar el diseño' });
+      return res.status(500).json({ error: 'GPT-4o no pudo analizar el diseño' });
     }
 
-    // PASO 2: Imagen 4 genera el diseño
-    const imagePrompt = `Generate a high quality image of the following graphic design on a solid ${bgColor} background. The design must be centered, without any t-shirt or clothing, just the design itself on a pure ${bgColor} background. Design description: ${designDescription}`;
-
-    const imagenResponse = await fetch(
-      `https://generativelanguage.googleapis.com/v1beta/models/imagen-4.0-fast-generate-001:predict?key=${process.env.GEMINI_KEY}`,
-      {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          instances: [{ prompt: imagePrompt }],
-          parameters: {
-            sampleCount: 1,
-            aspectRatio: "1:1",
-            personGeneration: "allow_adult"
-          }
-        })
-      }
-    );
-
-    if (!imagenResponse.ok) {
-      const err = await imagenResponse.text();
-      return res.status(500).json({ error: 'Imagen error: ' + err });
-    }
-
-    const imagenData = await imagenResponse.json();
-    const imageBase64Result = imagenData.predictions?.[0]?.bytesBase64Encoded;
-
-    if (!imageBase64Result) {
-      return res.status(500).json({ error: 'Imagen no devolvió resultado: ' + JSON.stringify(imagenData) });
-    }
-
-    return res.status(200).json({
-      image_url: `data:image/png;base64,${imageBase64Result}`
+    // PASO 2: DALL-E 3 genera el diseño
+    const dalleResponse = await fetch('https://api.openai.com/v1/images/generations', {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${process.env.OPENAI_KEY}`,
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({
+        model: 'dall-e-3',
+        prompt: `Generate a high quality image of the following graphic design on a solid ${bgColor} background. The design must be centered, without any t-shirt or clothing, just the design itself on a pure ${bgColor} background. Design description: ${designDescription}`,
+        n: 1,
+        size: '1024x1024',
+        quality: 'standard',
+        response_format: 'url'
+      })
     });
+
+    if (!dalleResponse.ok) {
+      const err = await dalleResponse.text();
+      return res.status(500).json({ error: 'DALL-E error: ' + err });
+    }
+
+    const dalleData = await dalleResponse.json();
+    const imageUrl = dalleData.data?.[0]?.url;
+
+    if (!imageUrl) {
+      return res.status(500).json({ error: 'DALL-E no devolvió imagen' });
+    }
+
+    return res.status(200).json({ image_url: imageUrl });
 
   } catch (error) {
     console.error("Error extract-design:", error);
