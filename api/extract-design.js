@@ -17,7 +17,7 @@ export default async function handler(req, res) {
 
     const formData = new FormData();
     formData.append('model', 'gpt-image-1');
-    formData.append('prompt', `Extrae el diseño de esta camiseta ${color} y genéralo de nuevo en alta calidad, respeta el diseño también su estilo, sus colores originales al 100% no satures los colores. y los textos si es necesario hazlos tipo vector para que se vean perfectos. Genera un fondo completamente ${color}.`);
+    formData.append('prompt', `Extrae el diseño de esta camiseta ${color} y genéralo de nuevo en alta calidad, respeta el diseño también su estilo, sus colores originales al 100% no satures los colores.Sube la calidad de los detalles. y los textos si es necesario hazlos tipo vector para que se vean perfectos. Genera un fondo completamente ${color}.`);
     formData.append('n', '1');
     formData.append('size', '1024x1536');
     formData.append('quality', 'low');
