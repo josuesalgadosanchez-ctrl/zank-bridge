@@ -23,7 +23,7 @@ export default async function handler(req, res) {
     formData.append('quality', 'low');
     formData.append('background', 'auto');
     formData.append('moderation', 'auto');
-    formData.append('input_fidelity', 'medium');
+    formData.append('input_fidelity', 'high');
     formData.append('image', blob, 'image.png');
 
     const response = await fetch('https://api.openai.com/v1/images/edits', {
