@@ -20,7 +20,7 @@ export default async function handler(req, res) {
     formData.append('prompt', `Extrae el diseño de esta camiseta ${color} y genéralo de nuevo en alta calidad, respeta el diseño también su estilo, sus colores originales al 100%. y los textos si es necesario hazlos tipo vector para que se vean perfectos. Genera un fondo completamente ${color}.`);
     formData.append('n', '1');
     formData.append('size', '1024x1536');
-    formData.append('quality', 'low');
+    formData.append('quality', 'high');
     formData.append('background', 'auto');
     formData.append('moderation', 'auto');
     formData.append('input_fidelity', 'high');
