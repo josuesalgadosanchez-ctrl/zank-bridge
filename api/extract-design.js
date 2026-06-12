@@ -7,48 +7,80 @@ export default async function handler(req, res) {
   try {
     const { image_data, shirt_color } = req.body;
     if (!image_data) return res.status(400).json({ error: 'Falta image_data' });
-    if (!process.env.OPENAI_KEY) return res.status(500).json({ error: 'Falta OPENAI_KEY' });
+    if (!process.env.XAI_KEY) return res.status(500).json({ error: 'Falta XAI_KEY' });
 
-    const color = shirt_color || 'negra';
+    const color = shirt_color || 'negro';
 
-    const base64Pure = image_data.replace(/^data:image\/\w+;base64,/, '');
-    const imageBuffer = Buffer.from(base64Pure, 'base64');
-    const blob = new Blob([imageBuffer], { type: 'image/png' });
-
-    const formData = new FormData();
-    formData.append('model', 'gpt-image-1');
-    formData.append('prompt', `Extrae el diseño de esta camiseta ${color} y genéralo de nuevo en alta calidad, respeta el diseño también su estilo, sus colores originales al 100%. y los textos si es necesario hazlos tipo vector para que se vean perfectos. Genera un fondo completamente ${color}.`);
-    formData.append('n', '1');
-    formData.append('size', '1024x1536');
-    formData.append('quality', 'high');
-    formData.append('background', 'auto');
-    formData.append('moderation', 'auto');
-    formData.append('input_fidelity', 'high');
-    formData.append('image', blob, 'image.png');
-
-    const response = await fetch('https://api.openai.com/v1/images/edits', {
+    // PASO 1: Grok Vision analiza el diseño
+    const visionResponse = await fetch('https://api.x.ai/v1/chat/completions', {
       method: 'POST',
       headers: {
-        'Authorization': `Bearer ${process.env.OPENAI_KEY}`
+        'Authorization': `Bearer ${process.env.XAI_KEY}`,
+        'Content-Type': 'application/json'
       },
-      body: formData
+      body: JSON.stringify({
+        model: 'grok-2-vision-1212',
+        messages: [
+          {
+            role: 'user',
+            content: [
+              {
+                type: 'image_url',
+                image_url: { url: image_data }
+              },
+              {
+                type: 'text',
+                text: `Describe con detalle extremo el diseño gráfico impreso en esta camiseta ${color}. Incluye: texto exacto visible, posición de cada elemento, colores exactos, estilo, figuras o personajes, formas, composición. Sé tan preciso que alguien pueda recrearlo idénticamente. NO describas la camiseta, solo el diseño impreso.`
+              }
+            ]
+          }
+        ],
+        max_tokens: 1500
+      })
     });
 
-    if (!response.ok) {
-      const err = await response.text();
-      return res.status(500).json({ error: 'OpenAI error: ' + err });
+    if (!visionResponse.ok) {
+      const err = await visionResponse.text();
+      return res.status(500).json({ error: 'Grok Vision error: ' + err });
     }
 
-    const data = await response.json();
-    const imageB64 = data.data?.[0]?.b64_json;
-    const imageUrl = data.data?.[0]?.url;
+    const visionData = await visionResponse.json();
+    const designDescription = visionData.choices?.[0]?.message?.content;
+
+    if (!designDescription) {
+      return res.status(500).json({ error: 'Grok no pudo analizar el diseño' });
+    }
+
+    // PASO 2: Aurora genera el diseño
+    const imagenResponse = await fetch('https://api.x.ai/v1/images/generations', {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${process.env.XAI_KEY}`,
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({
+        model: 'grok-2-image-1212',
+        prompt: `Recrea exactamente este diseño gráfico sobre fondo completamente ${color}. Copia cada detalle con precisión: mismo estilo, mismos personajes, mismo texto, mismos colores, misma composición. Sin camiseta, sin ropa, solo el diseño centrado sobre fondo ${color} puro. Diseño a recrear: ${designDescription}`,
+        n: 1,
+        response_format: 'b64_json'
+      })
+    });
+
+    if (!imagenResponse.ok) {
+      const err = await imagenResponse.text();
+      return res.status(500).json({ error: 'Aurora error: ' + err });
+    }
+
+    const imagenData = await imagenResponse.json();
+    const imageB64 = imagenData.data?.[0]?.b64_json;
+    const imageUrl = imagenData.data?.[0]?.url;
 
     if (imageB64) {
-      return res.status(200).json({ image_url: `data:image/png;base64,${imageB64}` });
+      return res.status(200).json({ image_url: `data:image/jpeg;base64,${imageB64}` });
     } else if (imageUrl) {
       return res.status(200).json({ image_url: imageUrl });
     } else {
-      return res.status(500).json({ error: 'Sin imagen. Respuesta: ' + JSON.stringify(data) });
+      return res.status(500).json({ error: 'Aurora no devolvió imagen. Respuesta: ' + JSON.stringify(imagenData) });
     }
 
   } catch (error) {
