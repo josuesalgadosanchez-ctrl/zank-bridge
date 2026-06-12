@@ -11,22 +11,21 @@ export default async function handler(req, res) {
 
     const color = shirt_color || 'negro';
 
-    const base64Pure = image_data.replace(/^data:image\/\w+;base64,/, '');
-    const imageBuffer = Buffer.from(base64Pure, 'base64');
-    const blob = new Blob([imageBuffer], { type: 'image/png' });
-
-    const formData = new FormData();
-    formData.append('model', 'grok-imagine-image-quality');
-    formData.append('prompt', `Extrae el diseño de esta camiseta ${color} y genéralo de nuevo en alta calidad, respeta el diseño también su estilo, sus colores originales al 100%. Los textos hazlos perfectos. Genera un fondo completamente ${color}.`);
-    formData.append('image', blob, 'image.png');
-    formData.append('response_format', 'b64_json');
-
     const response = await fetch('https://api.x.ai/v1/images/edits', {
       method: 'POST',
       headers: {
-        'Authorization': `Bearer ${process.env.XAI_KEY}`
+        'Authorization': `Bearer ${process.env.XAI_KEY}`,
+        'Content-Type': 'application/json'
       },
-      body: formData
+      body: JSON.stringify({
+        model: 'grok-imagine-image-quality',
+        prompt: `Extrae el diseño de esta camiseta ${color} y genéralo de nuevo en alta calidad, respeta el diseño también su estilo, sus colores originales al 100%. Los textos hazlos perfectos. Genera un fondo completamente ${color}.`,
+        image: {
+          url: image_data,
+          type: 'image_url'
+        },
+        response_format: 'b64_json'
+      })
     });
 
     if (!response.ok) {
