@@ -11,7 +11,7 @@ export default async function handler(req, res) {
 
     const color = shirt_color || 'negro';
 
-    // PASO 1: Grok Vision analiza el diseño
+    // PASO 1: Grok 4.3 analiza el diseño
     const visionResponse = await fetch('https://api.x.ai/v1/chat/completions', {
       method: 'POST',
       headers: {
@@ -19,7 +19,7 @@ export default async function handler(req, res) {
         'Content-Type': 'application/json'
       },
       body: JSON.stringify({
-        model: 'grok-2-vision-1212',
+        model: 'grok-4.3',
         messages: [
           {
             role: 'user',
@@ -59,7 +59,7 @@ export default async function handler(req, res) {
         'Content-Type': 'application/json'
       },
       body: JSON.stringify({
-        model: 'grok-2-image-1212',
+        model: 'grok-imagine-image-quality',
         prompt: `Recrea exactamente este diseño gráfico sobre fondo completamente ${color}. Copia cada detalle con precisión: mismo estilo, mismos personajes, mismo texto, mismos colores, misma composición. Sin camiseta, sin ropa, solo el diseño centrado sobre fondo ${color} puro. Diseño a recrear: ${designDescription}`,
         n: 1,
         response_format: 'b64_json'
@@ -80,7 +80,7 @@ export default async function handler(req, res) {
     } else if (imageUrl) {
       return res.status(200).json({ image_url: imageUrl });
     } else {
-      return res.status(500).json({ error: 'Aurora no devolvió imagen. Respuesta: ' + JSON.stringify(imagenData) });
+      return res.status(500).json({ error: 'Aurora no devolvió imagen: ' + JSON.stringify(imagenData) });
     }
 
   } catch (error) {
