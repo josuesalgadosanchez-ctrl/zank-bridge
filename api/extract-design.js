@@ -11,76 +11,39 @@ export default async function handler(req, res) {
 
     const color = shirt_color || 'negro';
 
-    // PASO 1: Grok 4.3 analiza el diseño
-    const visionResponse = await fetch('https://api.x.ai/v1/chat/completions', {
+    const base64Pure = image_data.replace(/^data:image\/\w+;base64,/, '');
+    const imageBuffer = Buffer.from(base64Pure, 'base64');
+    const blob = new Blob([imageBuffer], { type: 'image/png' });
+
+    const formData = new FormData();
+    formData.append('model', 'grok-imagine-image-quality');
+    formData.append('prompt', `Extrae el diseño de esta camiseta ${color} y genéralo de nuevo en alta calidad, respeta el diseño también su estilo, sus colores originales al 100%. Los textos hazlos perfectos. Genera un fondo completamente ${color}.`);
+    formData.append('image', blob, 'image.png');
+    formData.append('response_format', 'b64_json');
+
+    const response = await fetch('https://api.x.ai/v1/images/edits', {
       method: 'POST',
       headers: {
-        'Authorization': `Bearer ${process.env.XAI_KEY}`,
-        'Content-Type': 'application/json'
+        'Authorization': `Bearer ${process.env.XAI_KEY}`
       },
-      body: JSON.stringify({
-        model: 'grok-4.3',
-        messages: [
-          {
-            role: 'user',
-            content: [
-              {
-                type: 'image_url',
-                image_url: { url: image_data }
-              },
-              {
-                type: 'text',
-                text: `Describe con detalle extremo el diseño gráfico impreso en esta camiseta ${color}. Incluye: texto exacto visible, posición de cada elemento, colores exactos, estilo, figuras o personajes, formas, composición. Sé tan preciso que alguien pueda recrearlo idénticamente. NO describas la camiseta, solo el diseño impreso.`
-              }
-            ]
-          }
-        ],
-        max_tokens: 1500
-      })
+      body: formData
     });
 
-    if (!visionResponse.ok) {
-      const err = await visionResponse.text();
-      return res.status(500).json({ error: 'Grok Vision error: ' + err });
+    if (!response.ok) {
+      const err = await response.text();
+      return res.status(500).json({ error: 'xAI error: ' + err });
     }
 
-    const visionData = await visionResponse.json();
-    const designDescription = visionData.choices?.[0]?.message?.content;
-
-    if (!designDescription) {
-      return res.status(500).json({ error: 'Grok no pudo analizar el diseño' });
-    }
-
-    // PASO 2: Aurora genera el diseño
-    const imagenResponse = await fetch('https://api.x.ai/v1/images/generations', {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${process.env.XAI_KEY}`,
-        'Content-Type': 'application/json'
-      },
-      body: JSON.stringify({
-        model: 'grok-imagine-image-quality',
-        prompt: `Recrea exactamente este diseño gráfico sobre fondo completamente ${color}. Copia cada detalle con precisión: mismo estilo, mismos personajes, mismo texto, mismos colores, misma composición. Sin camiseta, sin ropa, solo el diseño centrado sobre fondo ${color} puro. Diseño a recrear: ${designDescription}`,
-        n: 1,
-        response_format: 'b64_json'
-      })
-    });
-
-    if (!imagenResponse.ok) {
-      const err = await imagenResponse.text();
-      return res.status(500).json({ error: 'Aurora error: ' + err });
-    }
-
-    const imagenData = await imagenResponse.json();
-    const imageB64 = imagenData.data?.[0]?.b64_json;
-    const imageUrl = imagenData.data?.[0]?.url;
+    const data = await response.json();
+    const imageB64 = data.data?.[0]?.b64_json;
+    const imageUrl = data.data?.[0]?.url;
 
     if (imageB64) {
       return res.status(200).json({ image_url: `data:image/jpeg;base64,${imageB64}` });
     } else if (imageUrl) {
       return res.status(200).json({ image_url: imageUrl });
     } else {
-      return res.status(500).json({ error: 'Aurora no devolvió imagen: ' + JSON.stringify(imagenData) });
+      return res.status(500).json({ error: 'Sin imagen: ' + JSON.stringify(data) });
     }
 
   } catch (error) {
