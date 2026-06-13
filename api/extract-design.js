@@ -7,43 +7,39 @@ export default async function handler(req, res) {
   try {
     const { image_data, shirt_color } = req.body;
     if (!image_data) return res.status(400).json({ error: 'Falta image_data' });
-    if (!process.env.XAI_KEY) return res.status(500).json({ error: 'Falta XAI_KEY' });
+    if (!process.env.FAL_KEY) return res.status(500).json({ error: 'Falta FAL_KEY' });
 
     const color = shirt_color || 'negro';
 
-    const response = await fetch('https://api.x.ai/v1/images/edits', {
+    const response = await fetch('https://fal.run/fal-ai/flux-pro/kontext', {
       method: 'POST',
       headers: {
-        'Authorization': `Bearer ${process.env.XAI_KEY}`,
+        'Authorization': `Key ${process.env.FAL_KEY}`,
         'Content-Type': 'application/json'
       },
       body: JSON.stringify({
-        model: 'grok-imagine-image-quality',
-        prompt: `Extrae el diseño de esta camiseta ${color} y genéralo de nuevo en alta calidad, respeta el diseño también su estilo, sus colores originales al 100%. Los textos hazlos perfectos. Genera un fondo completamente ${color}.`,
-        image: {
-          url: image_data,
-          type: 'image_url'
-        },
-        response_format: 'b64_json'
+        prompt: `Extrae el diseño gráfico de esta camiseta ${color} y genéralo de nuevo en alta calidad sobre un fondo completamente ${color}. Respeta el diseño, su estilo y colores originales al 100%. Sin camiseta, sin ropa, solo el diseño.`,
+        image_url: image_data,
+        num_inference_steps: 28,
+        guidance_scale: 3.5,
+        num_images: 1,
+        output_format: 'jpeg'
       })
     });
 
     if (!response.ok) {
       const err = await response.text();
-      return res.status(500).json({ error: 'xAI error: ' + err });
+      return res.status(500).json({ error: 'Fal error: ' + err });
     }
 
     const data = await response.json();
-    const imageB64 = data.data?.[0]?.b64_json;
-    const imageUrl = data.data?.[0]?.url;
+    const imageUrl = data.images?.[0]?.url || data.image?.url;
 
-    if (imageB64) {
-      return res.status(200).json({ image_url: `data:image/jpeg;base64,${imageB64}` });
-    } else if (imageUrl) {
-      return res.status(200).json({ image_url: imageUrl });
-    } else {
+    if (!imageUrl) {
       return res.status(500).json({ error: 'Sin imagen: ' + JSON.stringify(data) });
     }
+
+    return res.status(200).json({ image_url: imageUrl });
 
   } catch (error) {
     console.error("Error extract-design:", error);
