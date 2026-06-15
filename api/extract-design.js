@@ -18,7 +18,7 @@ export default async function handler(req, res) {
         'Content-Type': 'application/json'
       },
       body: JSON.stringify({
-        prompt: `Extrae el diseño gráfico de esta camiseta ${color} y genéralo de nuevo en alta calidad sobre un fondo completamente ${color}. Respeta el diseño, su estilo y colores originales al 100%. No quiero que se vea "afectado" por la camiseta, es decir, no quiero arrugas o defectos en el diseño propios de la camiseta. El diseño debe estar en primer plano. Sin camiseta, solo el diseño extraido y mejorado la calidad en 4k.`,
+        prompt: `Extrae el diseño de esta camiseta ${color} y genéralo de nuevo en alta calidad 4k sobre un fondo completamente ${color}. Respeta el diseño, su estilo y colores originales. No quiero que se vea "afectado" por la camiseta, es decir, no quiero arrugas o defectos en el diseño propios de la camiseta. El diseño debe estar en primer plano. Sin camiseta, solo el diseño extraido y mejorado la calidad en 4k.`,
         image_url: image_data,
         num_inference_steps: 28,
         guidance_scale: 3.5,
