@@ -18,7 +18,7 @@ export default async function handler(req, res) {
         'Content-Type': 'application/json'
       },
       body: JSON.stringify({
-        prompt: `Recrea el diseño de esta camiseta ${color} y genéralo de nuevo en alta calidad 4k sobre un fondo completamente ${color}. Respeta el diseño, su estilo y letras (opcional si las tiene)  colores originales. No quiero que se vea "afectado" por la camiseta, es decir, no quiero arrugas o defectos en el diseño propios de la camiseta. El diseño debe estar en primer plano. Sin camiseta, solo el diseño extraido y mejorado la calidad en 4k.`,
+        prompt: `This is a t-shirt mockup photo. Extract ONLY the graphic design/artwork printed on this ${color} t-shirt. Recreate it as a brand new high quality digital artwork on a solid ${color} background. Make it look like a professionally designed graphic, not a photo of fabric. Enhance sharpness, colors and details. Remove any fabric texture, wrinkles or photo artifacts. The result must look like a clean vector or digital illustration. No t-shirt, no clothing, just the extracted and enhanced design on pure ${color} background.`,
         image_url: image_data,
         num_inference_steps: 28,
         guidance_scale: 3.5,
